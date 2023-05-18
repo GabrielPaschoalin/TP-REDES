@@ -65,7 +65,7 @@ int main(int argc, char **argv){
     socklen_t caddrlen = sizeof(cstorage);
 
     int csock = accept(s, (struct sockaddr *)&cstorage, &caddrlen);
-    if (csock == -1){
+    if (csock == -1 ){
         logexit("accept");
     }
     else{
@@ -77,18 +77,36 @@ int main(int argc, char **argv){
             }
             printf("[log] Connection from %s \n", caddrstr);
 
+            // Receber o nome do arquivo
+            char filename[BUFSZ] = "teste";
+            memset(filename, 0, BUFSZ);
+            ssize_t filename_len = recv(csock, filename, BUFSZ - 1, 0);
+            if (filename_len <= 0) {
+                printf("Error receiving filename\n");
+                exit(EXIT_FAILURE);
+            }
+
+
+            //Recebendo os dados do arquivo
             char buf[BUFSZ];
             memset(buf, 0, BUFSZ);
             ssize_t count = recv(csock, buf, BUFSZ-1, 0);
 
-            printf("[msg] %s, %zd bytes: %s\n", caddrstr, count, buf);
+            if(count > 0) {
+                //Dados recebidos com sucesso
+                printf("[msg] %s, %zd bytes: %s\n", caddrstr, count, buf);
 
-            // Verificar se a mensagem toda chegou
-            if (count > 0) {
-                // A mensagem foi recebida com sucesso
-                printf("[log] File received and stored successfully.\n");
-            } 
+                // Verificar se a mensagem toda chegou
+                if (count >= strlen(buf)) {
+                    // A mensagem foi recebida com sucesso
+                    printf("File %s received\n", filename);
+                } else {
+                    // A mensagem não foi recebida com sucesso
+                    printf("Error receiving file %s\n", filename);
+                }
 
+            }
+    
             // Confirmar o recebimento da mensagem ao cliente
             const char *confirmation = "Message received";
             ssize_t sent = send(csock, confirmation, strlen(confirmation), 0);
@@ -99,8 +117,9 @@ int main(int argc, char **argv){
                 printf("Confirmation sent to the client\n");
             }
 
-
         }
+        close(csock);
+
     }
     
 

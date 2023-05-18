@@ -54,20 +54,16 @@ int main(int argc, char **argv){
         fgets(comando, BUFSIZ - 1, stdin);
 
         FILE *file;
-        
+        char filename[BUFSZ];
+       
         char str[] = "select file ";
 
         if (strncmp(comando, str, strlen(str)) == 0) {
 
             char *fileStart = strstr(comando, str) + strlen(str);
-            char filename[BUFSZ];
             sscanf(fileStart, "%s", filename);
             
-            //Extrai o nome do arquivo
-            size_t filename_len = strlen(filename);
-            if (filename[filename_len - 1] == '\n'){
-                filename[filename_len - 1] = '\0';
-            }
+           
                 
             // Abrindo o arquivo para leitura em modo binário
             file = fopen(filename, "rb"); 
@@ -86,6 +82,11 @@ int main(int argc, char **argv){
 
         if (strncmp(comando, "send file", 9) == 0) {
             
+            if(file == NULL){
+                printf("no file selected!\n");
+                continue;
+            }
+
             // Lendo o conteúdo do arquivo
             fseek(file, 0, SEEK_END);
             long file_size = ftell(file);
@@ -102,7 +103,14 @@ int main(int argc, char **argv){
             {
                 logexit("fread");
             }
-            
+
+            // Enviar o nome do arquivo para o servidor
+            size_t filename_len = strlen(filename);
+            ssize_t sent = send(s, filename, filename_len, 0);
+            if (sent == -1) {
+                logexit("send");
+            }
+
             // Enviando o conteúdo do arquivo para o servidor
             size_t total_sent = 0;
             while (total_sent < file_size)
@@ -137,15 +145,6 @@ int main(int argc, char **argv){
             exit(EXIT_SUCCESS); 
         }
         
-        /*
-        char close_msg[] = "close";
-        count = send(s, close_msg, strlen(close_msg) + 1, 0);
-        if (count != strlen(close_msg) + 1)
-        {
-            logexit("send");
-        }
-        }
-    */
         
     }   
 }
