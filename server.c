@@ -7,9 +7,10 @@
 
 #include <sys/types.h> 
 #include <sys/socket.h>
+#include <netdb.h>
 
 
-#define BUFSZ 1024
+#define BUFSZ 500
 
 void usage(int argc, char **argv){
 
@@ -58,37 +59,52 @@ int main(int argc, char **argv){
     printf("bound to %s, waiting conections \n", addrstr);
 
     //accept
-    while (1){
-        //c = cliente (cstorage = client_storage)
-        struct sockaddr_storage cstorage;
-        struct sockaddr *caddr = (struct sockaddr *)(&storage);
-        socklen_t caddrlen = sizeof(cstorage);
+    //c = cliente (cstorage = client_storage)
+    
+    struct sockaddr_storage cstorage;
+    socklen_t caddrlen = sizeof(cstorage);
 
-        int csock = accept(s, caddr, &caddrlen);
-        if (csock == -1){
-            logexit("accept");
+    int csock = accept(s, (struct sockaddr *)&cstorage, &caddrlen);
+    if (csock == -1){
+        logexit("accept");
+    }
+    else{
+        while(1){
+            
+            
+
+            char caddrstr[BUFSZ];
+            if (getnameinfo((struct sockaddr *)&cstorage, caddrlen, caddrstr, BUFSZ, NULL, 0, NI_NUMERICHOST) != 0) {
+                logexit("getnameinfo");
+            }
+            printf("[log] Connection from %s \n", caddrstr);
+
+            char buf[BUFSZ];
+            memset(buf, 0, BUFSZ);
+            ssize_t count = recv(csock, buf, BUFSZ-1, 0);
+
+            printf("[msg] %s, %zd bytes: %s\n", caddrstr, count, buf);
+
+            // Verificar se a mensagem toda chegou
+            if (count > 0) {
+                // A mensagem foi recebida com sucesso
+                printf("[log] File received and stored successfully.\n");
+            } 
+
+            // Confirmar o recebimento da mensagem ao cliente
+            const char *confirmation = "Message received";
+            ssize_t sent = send(csock, confirmation, strlen(confirmation), 0);
+            if (sent == -1) {
+                // Ocorreu um erro ao enviar a confirmação ao cliente
+                printf("Error sending confirmation\n");
+            } else {
+                printf("Confirmation sent to the client\n");
+            }
+
+
         }
-
-        char caddrstr[BUFSZ];
-        addrtostr(caddr, caddrstr, BUFSZ);    
-        printf("[log] connection from %s \n", caddrstr);
-
-        char buf[BUFSZ];
-        memset(buf, 0, BUFSZ);
-        size_t count = recv(csock, buf, BUFSZ-1, 0);
-        printf("[msg] %s, %d bytes: %s\n", caddrstr, (int)count, buf);
-
-        sprintf(buf, "remote endpoint: %.1000s\n", caddrstr);
-        count = send(csock, buf, strlen(buf)+1, 0);
-        if (count != strlen(buf) + 1){
-            logexit("send");
-        }
-
-        close(csock);
-
     }
     
-
 
     exit(EXIT_SUCCESS);
 }
