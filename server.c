@@ -70,8 +70,6 @@ int main(int argc, char **argv){
     }
     else{
         while(1){
-            
-            
 
             char caddrstr[BUFSZ];
             if (getnameinfo((struct sockaddr *)&cstorage, caddrlen, caddrstr, BUFSZ, NULL, 0, NI_NUMERICHOST) != 0) {
