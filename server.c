@@ -8,9 +8,10 @@
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netdb.h>
+#include <arpa/inet.h>
 
 
-#define BUFSZ 500
+#define BUFSZ 501
 
 void usage(int argc, char **argv){
 
@@ -65,61 +66,86 @@ int main(int argc, char **argv){
     socklen_t caddrlen = sizeof(cstorage);
 
     int csock = accept(s, (struct sockaddr *)&cstorage, &caddrlen);
-    if (csock == -1 ){
+
+    if (csock == -1){
         logexit("accept");
     }
     else{
         while(1){
 
             char caddrstr[BUFSZ];
-            if (getnameinfo((struct sockaddr *)&cstorage, caddrlen, caddrstr, BUFSZ, NULL, 0, NI_NUMERICHOST) != 0) {
-                logexit("getnameinfo");
-            }
+            addrtostr((struct sockaddr *)&cstorage, caddrstr, BUFSZ);
             printf("[log] Connection from %s \n", caddrstr);
 
             // Receber o nome do arquivo
-            char filename[BUFSZ] = "teste";
-            memset(filename, 0, BUFSZ);
+            char filename[BUFSZ];
+            memset(filename,0,BUFSZ);
+
             ssize_t filename_len = recv(csock, filename, BUFSZ - 1, 0);
             if (filename_len <= 0) {
-                printf("Error receiving filename\n");
+                printf("Error receiving file %s\n", filename);
                 exit(EXIT_FAILURE);
             }
 
+            if (filename_len > 0){
+                printf("file %s received\n", filename);
+            }
 
-            //Recebendo os dados do arquivo
-            char buf[BUFSZ];
-            memset(buf, 0, BUFSZ);
-            ssize_t count = recv(csock, buf, BUFSZ-1, 0);
 
-            if(count > 0) {
-                //Dados recebidos com sucesso
-                printf("[msg] %s, %zd bytes: %s\n", caddrstr, count, buf);
+            // char buf[BUFSZ];
+            // memset(buf, 0, BUFSZ);
+            // ssize_t count = recv(csock, buf, BUFSZ - 1, 0);
 
-                // Verificar se a mensagem toda chegou
-                if (count >= strlen(buf)) {
-                    // A mensagem foi recebida com sucesso
-                    printf("File %s received\n", filename);
-                } else {
-                    // A mensagem não foi recebida com sucesso
-                    printf("Error receiving file %s\n", filename);
+            //Verificar se o cliente solicitou o encerramento da sessão
+            if (strncmp(filename, "exit", 4) == 0) {
+                // Enviar mensagem de confirmação de encerramento ao cliente
+                const char *exit_confirmation = "connection closed";
+                ssize_t sent = send(csock, exit_confirmation, strlen(exit_confirmation), 0);
+                if (sent == -1) {
+                    printf("Error sending exit confirmation\n");
                 }
 
+                printf("Connection closed by the client\n");
+                break; // Encerra o loop principal do servidor
             }
-    
+
+            //Criar um novo arquivo para escrever os dados recebidos
+            // FILE *file = fopen(filename, "wb");
+            // if (file == NULL) {
+            //     printf("Error opening file %s\n", filename);
+            //     exit(EXIT_FAILURE);
+            // }
+ 
+            //printf("[msg] %s, %d bytes: %s\n", caddrstr, (int)count, buf);
+     
+            // //Recebendo os dados do arquivo
+            // while (count > 0) {
+            //     // Write received data to the file
+            //     fwrite(buf, sizeof(char), count, file);
+            //     count --;
+            // }
+            // if (count == -1) {
+            //     printf("Error receiving file %s\n", filename);
+            // } else {
+            //     printf("File %s received\n", filename);
+            // }
+
+            // fclose(file);
+
             // Confirmar o recebimento da mensagem ao cliente
             const char *confirmation = "Message received";
-            ssize_t sent = send(csock, confirmation, strlen(confirmation), 0);
+            ssize_t sent = send(csock, confirmation, strlen(confirmation) + 1, 0);
             if (sent == -1) {
                 // Ocorreu um erro ao enviar a confirmação ao cliente
                 printf("Error sending confirmation\n");
+            } else if (sent < strlen(confirmation)) {
+                // Nem todos os dados da confirmação foram enviados
+                printf("Incomplete confirmation sent to the client\n");
             } else {
                 printf("Confirmation sent to the client\n");
-            }
-
+            }       
         }
-        close(csock);
-
+        close(csock);   
     }
     
 

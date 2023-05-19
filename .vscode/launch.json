@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "(gdb) Iniciar",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/client",
+        "args": [],
+        "stopAtEntry": false,
+        "cwd": "${workspaceFolder}",
+        "environment": [],
+        "externalConsole": true,
+        "MIMode": "gdb",
+        "miDebuggerPath": "C:\\MinGW\\bin\\gdb.exe",
+        "preLaunchTask": "C/C++: gcc build active file"
+      }
+    ]
+  }
