@@ -82,6 +82,21 @@ int main(int argc, char **argv){
             memset(filename,0,BUFSZ);
 
             ssize_t filename_len = recv(csock, filename, BUFSZ - 1, 0);
+
+            //Verificar se o cliente solicitou o encerramento da sessão
+            if (strncmp(filename, "exit", 4) == 0) {
+                // Enviar mensagem de confirmação de encerramento ao cliente
+                const char *exit_confirmation = "connection closed";
+                ssize_t sent = send(csock, exit_confirmation, strlen(exit_confirmation), 0);
+                if (sent == -1) {
+                    printf("Error sending exit confirmation\n");
+                }
+
+                printf("Connection closed by the client\n");
+                break; // Encerra o loop principal do servidor
+            }
+
+            //Verifica se recebeu corretamente
             if (filename_len <= 0) {
                 printf("Error receiving file %s\n", filename);
                 exit(EXIT_FAILURE);
@@ -96,18 +111,7 @@ int main(int argc, char **argv){
             // memset(buf, 0, BUFSZ);
             // ssize_t count = recv(csock, buf, BUFSZ - 1, 0);
 
-            //Verificar se o cliente solicitou o encerramento da sessão
-            if (strncmp(filename, "exit", 4) == 0) {
-                // Enviar mensagem de confirmação de encerramento ao cliente
-                const char *exit_confirmation = "connection closed";
-                ssize_t sent = send(csock, exit_confirmation, strlen(exit_confirmation), 0);
-                if (sent == -1) {
-                    printf("Error sending exit confirmation\n");
-                }
-
-                printf("Connection closed by the client\n");
-                break; // Encerra o loop principal do servidor
-            }
+            
 
             //Criar um novo arquivo para escrever os dados recebidos
             // FILE *file = fopen(filename, "wb");

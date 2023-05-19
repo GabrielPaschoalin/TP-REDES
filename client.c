@@ -78,23 +78,29 @@ int main(int argc, char **argv){
                 fclose(file);
             }           
             
-            sscanf(comando, "select file %[^\n]", filename);
-            // Abrindo o arquivo para leitura em modo binário
-            file = fopen(filename, "rb"); 
+            char buf[BUFSIZ] = "";
 
-            char *extensao = strrchr(filename, '.');
+            sscanf(comando, "select file %[^\n]", buf);
+            // Abrindo o arquivo para leitura em modo binário
+            file = fopen(buf, "rb"); 
+
+            char *extensao = strrchr(buf, '.');
 
             if (file == NULL)
             {
-                printf("%s does not exist\n", filename);
+                printf("%s does not exist\n", buf);
                 exit(EXIT_FAILURE);
 
             }
             else if (!valida_extensao(extensao)){
-                printf("%s not valid\n", filename);
+                printf("%s not valid\n", buf);
             }
             else{
+                strcpy(filename, buf);
+                file = fopen(filename, "rb"); 
+                
                 printf("%s selected\n", filename);
+
             }
             
             
@@ -132,7 +138,6 @@ int main(int argc, char **argv){
             // }
 
             
-
             // Enviando o conteúdo do arquivo para o servidor
             // size_t total_sent = 0;
             // while (total_sent < file_size)
