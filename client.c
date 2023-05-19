@@ -179,7 +179,15 @@ int main(int argc, char **argv){
             break; // Encerra o loop principal do cliente
         }
         else{
+            // Envia mensagem especial para o servidor indicando o comando errado
+            const char *invalido = "invalido";
+            ssize_t sent = send(s, invalido, strlen(invalido), 0);
+            if (sent == -1) {
+                logexit("send");
+            }
+        
             printf("Comando inválido\n");
+            break; // Encerra o loop principal do cliente
         }
  
     }   

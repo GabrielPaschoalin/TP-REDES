@@ -50,106 +50,126 @@ int main(int argc, char **argv){
         logexit("bind");
     }
     
-    //listen
-    if (0 != listen(s, 10)){
-        logexit("listen");
-    }
+    int break_server = 0;
 
-    char addrstr[BUFSZ];
-    addrtostr(addr, addrstr, BUFSZ);    
-    printf("bound to %s, waiting conections \n", addrstr);
+    while(1){
+        //listen
+        if (0 != listen(s, 10)){
+            logexit("listen");
+        }
 
-    //accept
-    //c = cliente (cstorage = client_storage)
-    
-    struct sockaddr_storage cstorage;
-    socklen_t caddrlen = sizeof(cstorage);
+        char addrstr[BUFSZ];
+        addrtostr(addr, addrstr, BUFSZ);    
+        printf("bound to %s, waiting conections \n", addrstr);
 
-    int csock = accept(s, (struct sockaddr *)&cstorage, &caddrlen);
+        //accept
+        //c = cliente (cstorage = client_storage)
+        
+        struct sockaddr_storage cstorage;
+        socklen_t caddrlen = sizeof(cstorage);
 
-    if (csock == -1){
-        logexit("accept");
-    }
-    else{
-        while(1){
+        int csock = accept(s, (struct sockaddr *)&cstorage, &caddrlen);
 
-            char caddrstr[BUFSZ];
-            addrtostr((struct sockaddr *)&cstorage, caddrstr, BUFSZ);
-            printf("[log] Connection from %s \n", caddrstr);
+        if (csock == -1){
+            logexit("accept");
+        }
+        else{
+            while(1){
 
-            // Receber o nome do arquivo
-            char filename[BUFSZ];
-            memset(filename,0,BUFSZ);
+                char caddrstr[BUFSZ];
+                addrtostr((struct sockaddr *)&cstorage, caddrstr, BUFSZ);
+                printf("[log] Connection from %s \n", caddrstr);
 
-            ssize_t filename_len = recv(csock, filename, BUFSZ - 1, 0);
+                // Receber o nome do arquivo
+                char filename[BUFSZ];
+                memset(filename,0,BUFSZ);
 
-            //Verificar se o cliente solicitou o encerramento da sessão
-            if (strncmp(filename, "exit", 4) == 0) {
-                // Enviar mensagem de confirmação de encerramento ao cliente
-                const char *exit_confirmation = "connection closed";
-                ssize_t sent = send(csock, exit_confirmation, strlen(exit_confirmation), 0);
-                if (sent == -1) {
-                    printf("Error sending exit confirmation\n");
+                ssize_t filename_len = recv(csock, filename, BUFSZ - 1, 0);
+
+                //Verificar se o cliente solicitou o encerramento da sessão
+                if (strncmp(filename, "exit", 4) == 0) {
+                    // Enviar mensagem de confirmação de encerramento ao cliente
+                    const char *exit_confirmation = "connection closed";
+                    ssize_t sent = send(csock, exit_confirmation, strlen(exit_confirmation), 0);
+                    if (sent == -1) {
+                        printf("Error sending exit confirmation\n");
+                    }
+                    break_server = 1;
+                    printf("Connection closed by the client\n");
+                    break; // Encerra o loop principal do servidor
                 }
 
-                printf("Connection closed by the client\n");
-                break; // Encerra o loop principal do servidor
+                //Verificar se foi comando inválido
+                if (strncmp(filename, "invalido", strlen("invalido")) == 0) {
+                    // Enviar mensagem de confirmação de encerramento ao cliente
+                    const char *invalido = "connection closed";
+                    ssize_t sent = send(csock, invalido, strlen(invalido), 0);
+                    if (sent == -1) {
+                        printf("Error sending exit confirmation\n");
+                    }
+
+                    printf("Connection closed by the client\n");
+                    break; // Encerra o loop principal do servidor
+                }
+                //Verifica se recebeu corretamente
+                if (filename_len <= 0) {
+                    printf("Error receiving file %s\n", filename);
+                    exit(EXIT_FAILURE);
+                }
+
+                if (filename_len > 0){
+                    printf("file %s received\n", filename);
+                }
+
+
+
+                // char buf[BUFSZ];
+                // memset(buf, 0, BUFSZ);
+                // ssize_t count = recv(csock, buf, BUFSZ - 1, 0);
+
+                
+
+                //Criar um novo arquivo para escrever os dados recebidos
+                // FILE *file = fopen(filename, "wb");
+                // if (file == NULL) {
+                //     printf("Error opening file %s\n", filename);
+                //     exit(EXIT_FAILURE);
+                // }
+    
+                //printf("[msg] %s, %d bytes: %s\n", caddrstr, (int)count, buf);
+        
+                // //Recebendo os dados do arquivo
+                // while (count > 0) {
+                //     // Write received data to the file
+                //     fwrite(buf, sizeof(char), count, file);
+                //     count --;
+                // }
+                // if (count == -1) {
+                //     printf("Error receiving file %s\n", filename);
+                // } else {
+                //     printf("File %s received\n", filename);
+                // }
+
+                // fclose(file);
+
+                // Confirmar o recebimento da mensagem ao cliente
+                const char *confirmation = "Message received";
+                ssize_t sent = send(csock, confirmation, strlen(confirmation) + 1, 0);
+                if (sent == -1) {
+                    // Ocorreu um erro ao enviar a confirmação ao cliente
+                    printf("Error sending confirmation\n");
+                } else if (sent < strlen(confirmation)) {
+                    // Nem todos os dados da confirmação foram enviados
+                    printf("Incomplete confirmation sent to the client\n");
+                } else {
+                    printf("Confirmation sent to the client\n");
+                }       
             }
-
-            //Verifica se recebeu corretamente
-            if (filename_len <= 0) {
-                printf("Error receiving file %s\n", filename);
-                exit(EXIT_FAILURE);
-            }
-
-            if (filename_len > 0){
-                printf("file %s received\n", filename);
-            }
-
-
-            // char buf[BUFSZ];
-            // memset(buf, 0, BUFSZ);
-            // ssize_t count = recv(csock, buf, BUFSZ - 1, 0);
-
-            
-
-            //Criar um novo arquivo para escrever os dados recebidos
-            // FILE *file = fopen(filename, "wb");
-            // if (file == NULL) {
-            //     printf("Error opening file %s\n", filename);
-            //     exit(EXIT_FAILURE);
-            // }
- 
-            //printf("[msg] %s, %d bytes: %s\n", caddrstr, (int)count, buf);
-     
-            // //Recebendo os dados do arquivo
-            // while (count > 0) {
-            //     // Write received data to the file
-            //     fwrite(buf, sizeof(char), count, file);
-            //     count --;
-            // }
-            // if (count == -1) {
-            //     printf("Error receiving file %s\n", filename);
-            // } else {
-            //     printf("File %s received\n", filename);
-            // }
-
-            // fclose(file);
-
-            // Confirmar o recebimento da mensagem ao cliente
-            const char *confirmation = "Message received";
-            ssize_t sent = send(csock, confirmation, strlen(confirmation) + 1, 0);
-            if (sent == -1) {
-                // Ocorreu um erro ao enviar a confirmação ao cliente
-                printf("Error sending confirmation\n");
-            } else if (sent < strlen(confirmation)) {
-                // Nem todos os dados da confirmação foram enviados
-                printf("Incomplete confirmation sent to the client\n");
-            } else {
-                printf("Confirmation sent to the client\n");
-            }       
+            close(csock);   
         }
-        close(csock);   
+        if (break_server == 1){
+            break;
+        }
     }
     
 
