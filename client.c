@@ -9,6 +9,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#define BUFSZ 501
+
 
 void usage(int argc, char **argv){
 
@@ -32,7 +34,6 @@ int valida_extensao (char extensao[5]){
     return 0;        
 }
 
-#define BUFSZ 501
 
 int main(int argc, char **argv){
 
@@ -69,8 +70,8 @@ int main(int argc, char **argv){
         
         //Comando
         printf("Comando: ");
-        char comando[BUFSIZ];
-        fgets(comando, BUFSIZ - 1, stdin);
+        char comando[BUFSZ];
+        fgets(comando, BUFSZ - 1, stdin);
 
         if (strncmp(comando, "select file ", strlen("select file ")) == 0) {
 
@@ -78,32 +79,36 @@ int main(int argc, char **argv){
                 fclose(file);
             }           
             
-            char buf[BUFSIZ] = "";
+            char buf[BUFSZ] = "";
 
             sscanf(comando, "select file %[^\n]", buf);
             // Abrindo o arquivo para leitura em modo binário
-            file = fopen(buf, "rb"); 
+            file = fopen(buf, "r"); 
 
             char *extensao = strrchr(buf, '.');
 
-            if (file == NULL)
+            if (extensao == NULL || !valida_extensao(extensao))
             {
-                printf("%s does not exist\n", buf);
-                exit(EXIT_FAILURE);
+                printf("%s not valid\n", buf);
 
             }
-            else if (!valida_extensao(extensao)){
-                printf("%s not valid\n", buf);
+            else if (file == NULL ){
+                printf("%s does not exist\n", buf);
+                exit(EXIT_FAILURE);
             }
             else{
                 strcpy(filename, buf);
                 file = fopen(filename, "rb"); 
                 
+                if(file == NULL){
+                    logexit("fopen");
+                    exit(EXIT_FAILURE);
+                }
+
                 printf("%s selected\n", filename);
 
             }
-            
-            
+                 
         } 
         else if (strncmp(comando, "send file", strlen("send file")) == 0) {
            
@@ -115,45 +120,11 @@ int main(int argc, char **argv){
             // Enviar o nome do arquivo para o servidor
             size_t bytes_sent  = send(s, filename, strlen(filename) + 1, 0); // Qual o nº de bites efetivamente transmitidos
 
-            if (bytes_sent != strlen(filename) + 1){
+            if (bytes_sent == -1) {
                 logexit("send");
             }
-
-
-            // Lendo o conteúdo do arquivo
-            // fseek(file, 0, SEEK_END);
-            // long file_size = ftell(file);
-            // fseek(file, 0, SEEK_SET);
-
-            // char *file_buffer = (char *)malloc(file_size);
-            // if (file_buffer == NULL)
-            // {
-            //     logexit("malloc");
-            // }
-
-            // size_t bytes_read = fread(file_buffer, sizeof(char), file_size, file);
-            // if (bytes_read != file_size)
-            // {
-            //     logexit("fread");
-            // }
-
             
-            // Enviando o conteúdo do arquivo para o servidor
-            // size_t total_sent = 0;
-            // while (total_sent < file_size)
-            // {
-            //     ssize_t bytes_sent = send(s, file_buffer + total_sent, file_size - total_sent, 0);
-            //     if (bytes_sent == -1)
-            //     {
-            //         logexit("send");
-            //     }
-            //     total_sent += bytes_sent;
-            // }
-
-            // free(file_buffer);
-            // fclose(file);
-       
-            // Recebendo a confirmação de recebimento do servidor
+            // RECEBER A CONFIRMAÇÃO DO SERVIDOR
             char recv_buf[BUFSZ];
             memset(recv_buf, 0, BUFSZ);
             ssize_t count = recv(s, recv_buf, BUFSZ - 1, 0);
@@ -185,12 +156,10 @@ int main(int argc, char **argv){
             if (sent == -1) {
                 logexit("send");
             }
-        
-            printf("Comando inválido\n");
             break; // Encerra o loop principal do cliente
         }
  
-    }   
+    } 
     if (file != NULL) {
         fclose(file);
     }

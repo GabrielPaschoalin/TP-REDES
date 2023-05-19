@@ -13,6 +13,7 @@
 
 #define BUFSZ 501
 
+
 void usage(int argc, char **argv){
 
     printf("usage: %s <v4|v6> <server port>zn", argv[0]);
@@ -21,6 +22,7 @@ void usage(int argc, char **argv){
     exit(EXIT_FAILURE);
 
 }
+
 
 int main(int argc, char **argv){
 
@@ -95,20 +97,14 @@ int main(int argc, char **argv){
                         printf("Error sending exit confirmation\n");
                     }
                     break_server = 1;
-                    printf("Connection closed by the client\n");
+                    printf("Connection closed\n");
                     break; // Encerra o loop principal do servidor
                 }
 
                 //Verificar se foi comando inválido
                 if (strncmp(filename, "invalido", strlen("invalido")) == 0) {
-                    // Enviar mensagem de confirmação de encerramento ao cliente
-                    const char *invalido = "connection closed";
-                    ssize_t sent = send(csock, invalido, strlen(invalido), 0);
-                    if (sent == -1) {
-                        printf("Error sending exit confirmation\n");
-                    }
 
-                    printf("Connection closed by the client\n");
+                    printf("Connection closed\n");
                     break; // Encerra o loop principal do servidor
                 }
                 //Verifica se recebeu corretamente
@@ -121,38 +117,8 @@ int main(int argc, char **argv){
                     printf("file %s received\n", filename);
                 }
 
-
-
-                // char buf[BUFSZ];
-                // memset(buf, 0, BUFSZ);
-                // ssize_t count = recv(csock, buf, BUFSZ - 1, 0);
-
                 
-
-                //Criar um novo arquivo para escrever os dados recebidos
-                // FILE *file = fopen(filename, "wb");
-                // if (file == NULL) {
-                //     printf("Error opening file %s\n", filename);
-                //     exit(EXIT_FAILURE);
-                // }
-    
-                //printf("[msg] %s, %d bytes: %s\n", caddrstr, (int)count, buf);
-        
-                // //Recebendo os dados do arquivo
-                // while (count > 0) {
-                //     // Write received data to the file
-                //     fwrite(buf, sizeof(char), count, file);
-                //     count --;
-                // }
-                // if (count == -1) {
-                //     printf("Error receiving file %s\n", filename);
-                // } else {
-                //     printf("File %s received\n", filename);
-                // }
-
-                // fclose(file);
-
-                // Confirmar o recebimento da mensagem ao cliente
+                // CONFIRMAR O RECEBIMENTO DA MENSAGEM PARA O CLIENTE
                 const char *confirmation = "Message received";
                 ssize_t sent = send(csock, confirmation, strlen(confirmation) + 1, 0);
                 if (sent == -1) {
@@ -171,7 +137,6 @@ int main(int argc, char **argv){
             break;
         }
     }
-    
 
     exit(EXIT_SUCCESS);
 }
