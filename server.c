@@ -53,6 +53,8 @@ int main(int argc, char **argv){
     }
     
     int break_server = 0;
+    char files_saved [BUFSZ][BUFSZ];
+    int num_files = 0;
 
     while(1){
         //listen
@@ -87,6 +89,21 @@ int main(int argc, char **argv){
                 memset(filename,0,BUFSZ);
 
                 ssize_t filename_len = recv(csock, filename, BUFSZ - 1, 0);
+
+                //Verificar se arquivo já existe
+                for (int i = 0; i < num_files; i++){
+                    if (0 == strcmp(filename, files_saved[i])){
+                        printf("file %s overwritten\n", filename);
+                        break_server = 1;
+                        break;
+                    }
+                }
+                if(break_server){
+                    break;
+                }
+                //Adicionar novo arquivo na lista
+                strcpy(files_saved[num_files], filename);
+                num_files +=1;
 
                 //Verificar se o cliente solicitou o encerramento da sessão
                 if (strncmp(filename, "exit", 4) == 0) {
