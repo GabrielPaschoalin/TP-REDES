@@ -1,0 +1,5 @@
+opendir
+dados
+dada
+destination
+fseek

@@ -38,16 +38,19 @@ int valida_extensao(char extensao[5])
     return 0;
 }
 
-void validarCaracteres(char* str) {
+void validarCaracteres(char *str)
+{
 
     if (str == NULL)
         return;
 
-    char* source = str;
-    char* destination = str;
+    char *source = str;
+    char *destination = str;
 
-    while (*source) {
-        if (isascii(*source) && (isalnum(*source) || isspace(*source))) {
+    while (*source)
+    {
+        if (isascii(*source) && (isalnum(*source) || isspace(*source)))
+        {
             *destination = *source;
             destination++;
         }
@@ -55,7 +58,6 @@ void validarCaracteres(char* str) {
     }
 
     *destination = '\0';
-
 }
 
 int main(int argc, char **argv)
@@ -72,6 +74,7 @@ int main(int argc, char **argv)
         usage(argc, argv);
     }
 
+    // Declaração do Socket
     int s;
     s = socket(storage.ss_family, SOCK_STREAM, 0);
 
@@ -81,7 +84,8 @@ int main(int argc, char **argv)
     }
 
     struct sockaddr *addr = (struct sockaddr *)(&storage);
-
+    
+    //Conectar ao servidor
     if (0 != connect(s, addr, sizeof(storage)))
     {
         logexit("connect");
@@ -91,6 +95,7 @@ int main(int argc, char **argv)
     addrtostr(addr, addrstr, BUFSZ);
     printf("connected to %s \n", addrstr);
 
+    //Arquivo que será enviado ao servidor
     FILE *file = NULL;
     char filename[BUFSZ] = "";
 
@@ -109,22 +114,22 @@ int main(int argc, char **argv)
 
             sscanf(comando, "select file %[^\n]", buf);
             // Abrindo o arquivo para leitura em modo binário
-            file = fopen(buf, "r"); 
+            file = fopen(buf, "r");
 
             char *extensao = strrchr(buf, '.');
 
-            if (file == NULL)
+            if (file == NULL) //Arquivo não existe na pasta
             {
                 printf("%s does not exist\n", buf);
                 continue;
             }
             else if (extensao == NULL || !valida_extensao(extensao))
-            {
-                printf("%s not valid\n", buf);
+            { //Extensão não é válida
+                printf("%s not valid!\n", buf);
                 continue;
             }
             else
-            {
+            { //Arquivo válido
                 strcpy(filename, buf);
                 file = fopen(filename, "rb");
 
@@ -164,18 +169,16 @@ int main(int argc, char **argv)
             {
                 exit(EXIT_FAILURE);
             }
-            
+
+            //Função para validar os caracteres do buffer gerado
             validarCaracteres(conteudo);
 
-
-            //ENVIAR O CONTEÚDO
+            // ENVIAR O CONTEÚDO
             char buf[BUFSZ * 2];
 
             if (conteudo != NULL)
             {
                 sprintf(buf, "%s\n%s", filename, conteudo);
-
-                //VALIDAR CARACTERES
 
                 ssize_t sent = send(s, buf, strlen(buf), 0);
                 if (sent == -1)
@@ -185,23 +188,6 @@ int main(int argc, char **argv)
             }
 
             free(conteudo);
-            // RECEBER A CONFIRMAÇÃO DO SERVIDOR
-            char recv_buf[BUFSZ];
-            memset(recv_buf, 0, BUFSZ);
-            ssize_t count = recv(s, recv_buf, BUFSZ - 1, 0);
-            if (count == -1)
-            {
-                logexit("recv");
-            }
-            else if (count == 0)
-            {
-                // O servidor fechou a conexão
-                printf("Connection closed by the server\n");
-            }
-            else
-            {
-                printf("Server confirmation: %s\n", recv_buf);
-            }
         }
         else if (strncmp(comando, "exit", 4) == 0)
         { // ENCERRAR CONEXÃO
@@ -212,7 +198,6 @@ int main(int argc, char **argv)
             {
                 logexit("send");
             }
-            printf("Session terminated\n");
             break; // Encerra o loop principal do cliente
         }
         else

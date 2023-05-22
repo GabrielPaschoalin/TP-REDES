@@ -12,7 +12,6 @@
 #include <arpa/inet.h>
 #include <sys/stat.h>
 
-
 #define BUFSZ 501
 
 void usage(int argc, char **argv)
@@ -23,14 +22,18 @@ void usage(int argc, char **argv)
 
     exit(EXIT_FAILURE);
 }
-void remove_directory(const char* path) {
-    DIR* dir = opendir(path);
-    struct dirent* entry;
+void remove_directory(const char *path)
+{
+    DIR *dir = opendir(path);
+    struct dirent *entry;
 
-    if (dir) {
-        while ((entry = readdir(dir)) != NULL) {
+    if (dir)
+    {
+        while ((entry = readdir(dir)) != NULL)
+        {
             char file_path[BUFSZ];
-            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            {
                 continue;
             }
             snprintf(file_path, BUFSZ, "%s/%s", path, entry->d_name);
@@ -42,12 +45,11 @@ void remove_directory(const char* path) {
     remove(path);
 }
 
-
-char * extrairFilename (const char * mensagem){
+char *extrairFilename(const char *mensagem)
+{
     const char *linha_init = strchr(mensagem, '\n');
     if (linha_init == NULL)
     {
-        printf("Caractere de nova linha não encontrado na mensagem.\n");
         return NULL;
     }
 
@@ -71,31 +73,33 @@ void createFile(const char *mensagem)
     FILE *file = fopen(path, "w");
     if (file == NULL)
     {
-        printf("Não foi possível criar o arquivo.\n");
         return;
     }
 
     fputs(mensagem, file);
     fclose(file);
-    free (path);
+    free(path);
 
     return;
 }
 
-int verificarOverwritting(const char* filename) {
+int verificarOverwritting(const char *filename)
+{
     char path[BUFSZ];
     sprintf(path, "serverFiles/%s", filename);
 
     struct stat st;
-    if (stat(path, &st) == 0) {
+    if (stat(path, &st) == 0)
+    {
         // File exists
         return 1;
-    } else {
+    }
+    else
+    {
         // File does not exist
         return 0;
     }
 }
-
 
 int main(int argc, char **argv)
 {
@@ -104,13 +108,13 @@ int main(int argc, char **argv)
     {
         usage(argc, argv);
     }
-
+    //Cria o socket
     struct sockaddr_storage storage;
     if (0 != server_sockaddr_init(argv[1], argv[2], &storage))
     {
         usage(argc, argv);
     }
-
+    
     int s;
     s = socket(storage.ss_family, SOCK_STREAM, 0);
     if (s == -1)
@@ -135,9 +139,9 @@ int main(int argc, char **argv)
     char files_saved[BUFSZ][BUFSZ];
     int num_files = 0;
 
-    const char* folderName = "serverFiles";
+    const char *folderName = "serverFiles";
 
-    //remove a pasta que tiver
+    // remove a pasta que tiver
     remove_directory(folderName);
     // Cria a nova pasta com permissões padrão (0777)
     mkdir(folderName, 0777);
@@ -175,7 +179,7 @@ int main(int argc, char **argv)
                 addrtostr((struct sockaddr *)&cstorage, caddrstr, BUFSZ);
                 printf("[log] Connection from %s \n", caddrstr);
 
-
+                //Recebe os dados do client
                 char buf[BUFSZ];
                 ssize_t count = recv(csock, buf, BUFSZ, 0);
                 if (count == -1)
@@ -206,52 +210,37 @@ int main(int argc, char **argv)
                     break; // Encerra o loop principal do servidor
                 }
 
-
-                char* filename = extrairFilename(buf);
-
-                if(verificarOverwritting(filename)){
+                char *filename = extrairFilename(buf);
+                
+                //Verifica se já existe o arquivo
+                if (verificarOverwritting(filename))
+                {
                     printf("file %s overwritten\n", filename);
                     const char *confirmation = "This file already exists";
                     send(csock, confirmation, strlen(confirmation) + 1, 0);
                     continue;
                 }
-            
-                //Adicionar novo arquivo na lista
-                strcpy(files_saved[num_files], filename);
-                num_files +=1;
 
-                //Verifica se recebeu corretamente
-                if (count <= 0) {
+                // Adicionar novo arquivo na lista
+                strcpy(files_saved[num_files], filename);
+                num_files += 1;
+
+                // Verifica se recebeu corretamente
+                if (count <= 0)
+                {
                     printf("Error receiving file %s\n", filename);
                     exit(EXIT_FAILURE);
                 }
 
-                if (count > 0){
+                if (count > 0)
+                {
                     printf("file %s received\n", filename);
                 }
 
-                //CRIAR O ARQUIVO
+                // CRIAR O ARQUIVO
                 createFile(buf);
 
-                // CONFIRMAR O RECEBIMENTO DA MENSAGEM PARA O CLIENTE
-                const char *confirmation = "Message received";
-                ssize_t sent = send(csock, confirmation, strlen(confirmation) + 1, 0);
-                if (sent == -1)
-                {
-                    // Ocorreu um erro ao enviar a confirmação ao cliente
-                    printf("Error sending confirmation\n");
-                }
-                else if (sent < strlen(confirmation))
-                {
-                    // Nem todos os dados da confirmação foram enviados
-                    printf("Incomplete confirmation sent to the client\n");
-                }
-                else
-                {
-                    printf("Confirmation sent to the client\n");
-                }
-
-                memset(buf,0,BUFSZ);
+                memset(buf, 0, BUFSZ);
             }
             close(csock);
         }
@@ -259,7 +248,7 @@ int main(int argc, char **argv)
         {
             break;
         }
-    }   
-    
+    }
+
     exit(EXIT_SUCCESS);
 }
